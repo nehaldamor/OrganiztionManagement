@@ -31,6 +31,42 @@
 $ npm install
 ```
 
+## Database setup
+
+The backend uses Prisma 7 with PostgreSQL. Copy `.env.example` to `.env` and set
+`DATABASE_URL` to a PostgreSQL database the backend can access.
+
+Generate the Prisma Client and create/apply the initial development migration:
+
+```bash
+$ npm run prisma:generate
+$ npm run prisma:migrate -- --name init
+$ npm run prisma:seed
+```
+
+Use `npm run prisma:deploy` to apply committed migrations in a deployment
+environment. The NestJS application registers a shared `PrismaService` through
+`PrismaModule`; it connects during application startup and disconnects during
+shutdown. The seed command requires `PLATFORM_ADMIN_EMAIL` and
+`PLATFORM_ADMIN_PASSWORD` in `.env`; use a unique email and a password of at
+least 12 characters. It creates or updates the single seeded platform admin,
+storing only a bcrypt password hash.
+
+## Authentication
+
+Set `JWT_SECRET` in `.env` to a long, random secret. The login endpoint is
+`POST /auth/login` and accepts:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "your-platform-admin-password"
+}
+```
+
+It returns a 15-minute bearer access token and safe user details. Send the
+token as `Authorization: Bearer <accessToken>` on authenticated requests.
+
 ## Compile and run the project
 
 ```bash

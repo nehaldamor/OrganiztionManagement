@@ -1,0 +1,30 @@
+import { Module } from '@nestjs/common';
+import 'dotenv/config';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthController } from './auth.controller';
+import { AuthRepository } from './auth.repository';
+import { AuthService } from './auth.service';
+
+@Module({
+  imports: [
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+
+        if (!secret) {
+          throw new Error(
+            'JWT_SECRET must be configured before starting the app.',
+          );
+        }
+
+        return {
+          secret,
+          signOptions: { expiresIn: '15m' },
+        };
+      },
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [AuthService, AuthRepository],
+})
+export class AuthModule {}

@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+enum UserRole {
+  PLATFORM_ADMIN
+  ORGANIZATION_ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model Organization {
+  id        String             @id @default(cuid())
+  name      String
+  slug      String             @unique
+  status    OrganizationStatus @default(ACTIVE)
+  users     User[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  passwordHash   String
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  role           UserRole      @default(EMPLOYEE)
+  status         UserStatus    @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
+}
