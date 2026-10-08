@@ -15,4 +15,15 @@ export class AuthRepository {
       },
     });
   }
+
+  findActiveById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        organization: {
+          select: { status: true },
+        },
+      },
+    });
+  }
 }

@@ -6,6 +6,7 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
 enum UserRole {
   PLATFORM_ADMIN
   ORGANIZATION_ADMIN
@@ -25,26 +26,44 @@ enum OrganizationStatus {
 }
 
 model Organization {
-  id        String             @id @default(cuid())
-  name      String
-  slug      String             @unique
-  status    OrganizationStatus @default(ACTIVE)
-  users     User[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  status      OrganizationStatus @default(ACTIVE)
+  users       User[]
+  invitations Invitation[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 model User {
-  id             String        @id @default(cuid())
-  name           String
-  email          String        @unique
-  passwordHash   String
-  organizationId String?
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  role           UserRole      @default(EMPLOYEE)
-  status         UserStatus    @default(ACTIVE)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  name            String
+  email           String        @unique
+  passwordHash    String
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  role            UserRole      @default(EMPLOYEE)
+  status          UserStatus    @default(ACTIVE)
+  sentInvitations Invitation[]  @relation("InvitationInviter")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([organizationId])
+}
+
+model Invitation {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedById    String
+  invitedBy      User          @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: Restrict)
+  email          String
+  role           UserRole      @default(ORGANIZATION_ADMIN)
+  tokenHash      String        @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, email])
 }
