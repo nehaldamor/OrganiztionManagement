@@ -7,8 +7,8 @@ const platformAdminId = 'platform-admin-seed';
 
 async function main(): Promise<void> {
   const connectionString = process.env.DATABASE_URL;
-  const email = 'admin@example.com';
-  const password = '123456';
+  const email = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.PLATFORM_ADMIN_PASSWORD;
 
   if (!connectionString) {
     throw new Error('DATABASE_URL must be configured before running the seed.');
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     throw new Error('PLATFORM_ADMIN_EMAIL must be a valid email address.');
   }
 
-  if (!password || password.length < 6) {
+  if (!password || password.length < 12) {
     throw new Error(
       'PLATFORM_ADMIN_PASSWORD must be at least 12 characters long.',
     );

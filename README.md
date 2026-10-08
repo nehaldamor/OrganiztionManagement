@@ -67,6 +67,48 @@ Set `JWT_SECRET` in `.env` to a long, random secret. The login endpoint is
 It returns a 15-minute bearer access token and safe user details. Send the
 token as `Authorization: Bearer <accessToken>` on authenticated requests.
 
+## Organization onboarding
+
+Platform organization routes require an active platform administrator bearer
+token. The server verifies the token and reloads the user and organization
+status from PostgreSQL for every request; the role in the token is not trusted
+for authorization.
+
+- `POST /platform/organizations` creates an active organization. Send `{ "name":
+"YORK" }`; a URL-safe slug is generated from the name. An optional `slug` can
+  be supplied.
+- `GET /platform/organizations` lists organizations and user/invitation counts.
+- `GET /platform/organizations/:id` returns organization details.
+- `PATCH /platform/organizations/:id` updates the name or slug.
+- `PATCH /platform/organizations/:id/status` accepts `{ "status": "SUSPENDED" }`
+  or `{ "status": "ACTIVE" }`. Suspended organizations cannot use normal
+  organization endpoints or accept invitations.
+- `POST /invitations` is the single invite-creation route. It accepts `{ "email":
+  "user@example.com", "role": "MANAGER", "organizationId": "org-id" }`.
+  `organizationId` is omitted for a global `PLATFORM_ADMIN` invitation.
+  Authorization is based on the authenticated user's current database role:
+  - Platform Admin → any role. Non-platform roles require an organization ID.
+  - Organization Admin → Manager or Employee in their own organization.
+  - Manager → Employee in their own organization.
+  - Employee → cannot invite users.
+    Organization invites require an active organization. Non-platform
+    organization roles require an existing organization admin. Platform Admins
+    can invite an organization admin at any stage, and organization users cannot
+    grant Platform Admin access. Invitations expire after seven days. In
+    non-production environments, the response includes the raw token for
+    testing; only its SHA-256 hash is stored.
+- `POST /invitations/accept` accepts `{ "token": "...", "name": "...",
+"password": "at-least-12-characters" }` and activates the account using the
+  role and organization scope selected by the inviter. A global platform-admin
+  invitation creates a platform admin without an organization.
+
+Invitation tokens are returned only outside production; configure an email
+delivery provider before using invitations in production.
+Invitation routes and their repository/business logic live in the dedicated
+`InvitationsModule`, separate from organization lifecycle management.
+Apply the schema change with a Prisma migration before starting the updated
+application.
+
 ## Compile and run the project
 
 ```bash
