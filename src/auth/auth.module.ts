@@ -6,6 +6,7 @@ import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PlatformAdminGuard } from './guards/platform-admin.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -27,7 +28,19 @@ import { PlatformAdminGuard } from './guards/platform-admin.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, JwtAuthGuard, PlatformAdminGuard],
-  exports: [JwtModule, AuthRepository, JwtAuthGuard, PlatformAdminGuard],
+  providers: [
+    AuthService,
+    AuthRepository,
+    JwtAuthGuard,
+    PlatformAdminGuard,
+    RolesGuard,
+  ],
+  exports: [
+    JwtModule,
+    AuthRepository,
+    JwtAuthGuard,
+    PlatformAdminGuard,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}

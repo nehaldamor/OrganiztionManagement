@@ -8,14 +8,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PlatformAdminGuard } from '../auth/guards/platform-admin.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { UpdateOrganizationStatusDto } from './dto/update-organization-status.dto';
 import { OrganizationService } from './organization.service';
 
 @Controller('platform/organizations')
-@UseGuards(JwtAuthGuard, PlatformAdminGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('PLATFORM_ADMIN')
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 

@@ -39,9 +39,9 @@ export class JwtAuthGuard implements CanActivate {
     if (!payload.sub) {
       throw new UnauthorizedException('The access token is invalid.');
     }
-
+    
     const user = await this.authRepository.findActiveById(payload.sub);
-
+    
     if (
       !user ||
       user.status !== 'ACTIVE' ||

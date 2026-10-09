@@ -18,7 +18,7 @@ type InvitedRole = Exclude<UserRole, 'PLATFORM_ADMIN'> | 'PLATFORM_ADMIN';
 
 @Injectable()
 export class InvitationsService {
-  constructor(private readonly repository: InvitationsRepository) {}
+  constructor(private readonly repository: InvitationsRepository) { }
 
   async invite(inviter: AuthenticatedUser, dto: InviteUserDto) {
     const organizationId = dto.organizationId?.trim() || null;
@@ -179,7 +179,7 @@ export class InvitationsService {
         'MANAGER',
         'EMPLOYEE',
       ],
-      ORGANIZATION_ADMIN: ['MANAGER', 'EMPLOYEE','ORGANIZATION_ADMIN'],
+      ORGANIZATION_ADMIN: ['MANAGER', 'EMPLOYEE', 'ORGANIZATION_ADMIN'],
       MANAGER: ['EMPLOYEE'],
       EMPLOYEE: [],
     };
