@@ -84,7 +84,7 @@ for authorization.
   or `{ "status": "ACTIVE" }`. Suspended organizations cannot use normal
   organization endpoints or accept invitations.
 - `POST /invitations` is the single invite-creation route. It accepts `{ "email":
-  "user@example.com", "role": "MANAGER", "organizationId": "org-id" }`.
+"user@example.com", "role": "MANAGER", "organizationId": "org-id" }`.
   `organizationId` is omitted for a global `PLATFORM_ADMIN` invitation.
   Authorization is based on the authenticated user's current database role:
   - Platform Admin → any role. Non-platform roles require an organization ID.
@@ -108,6 +108,31 @@ Invitation routes and their repository/business logic live in the dedicated
 `InvitationsModule`, separate from organization lifecycle management.
 Apply the schema change with a Prisma migration before starting the updated
 application.
+
+## User management
+
+All user-management routes require a bearer access token:
+
+- `GET /users` lists users for the authenticated user's organization.
+  Platform Admins must select an organization with
+  `GET /users?organizationId=<organization-id>`; the organization must exist.
+- `GET /users/:id` returns one user.
+- `PATCH /users/:id` accepts supported fields such as `name`, `role`, and
+  `status`.
+- `DELETE /users/:id` deletes a user.
+
+Platform Admins can view and manage users across organizations. Organization
+Admins can view and manage users only in their own organization. Managers and
+Employees can only view users in their own organization. User responses never
+include password hashes. Users cannot delete themselves, change their own role,
+or deactivate their own account. Platform Admin roles cannot be changed
+through this endpoint.
+
+Route role checks use the reusable `@Roles(...)` decorator and `RolesGuard`.
+For example, add `@UseGuards(JwtAuthGuard, RolesGuard)` and
+`@Roles('PLATFORM_ADMIN', 'ORGANIZATION_ADMIN')` to a handler. Tenant/resource
+ownership checks must still be enforced by the service/repository; role guards
+do not replace tenant scoping.
 
 ## Compile and run the project
 
