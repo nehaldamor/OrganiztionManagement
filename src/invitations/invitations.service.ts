@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,13 +13,17 @@ import { hash } from 'bcryptjs';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
+import { InvitationEmailService } from './invitation-email.service';
 import { InvitationsRepository } from './invitations.repository';
 
 type InvitedRole = Exclude<UserRole, 'PLATFORM_ADMIN'> | 'PLATFORM_ADMIN';
 
 @Injectable()
 export class InvitationsService {
-  constructor(private readonly repository: InvitationsRepository) { }
+  constructor(
+    private readonly repository: InvitationsRepository,
+    private readonly emailService: InvitationEmailService,
+  ) {}
 
   async invite(inviter: AuthenticatedUser, dto: InviteUserDto) {
     const organizationId = dto.organizationId?.trim() || null;
@@ -165,10 +170,29 @@ export class InvitationsService {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    return {
-      ...invitation,
-      ...(process.env.NODE_ENV === 'production' ? {} : { token }),
-    };
+    try {
+      const invitationUrl = new URL(
+        '/accept-invitation',
+        process.env.FRONTEND_URL || 'http://localhost:5173',
+      );
+      invitationUrl.searchParams.set('token', token);
+      const organizationName = organizationId
+        ? (await this.repository.findOrganizationForInvite(organizationId))?.name ??
+          'your organization'
+        : 'FlowTenant';
+      await this.emailService.sendEmail(
+        email,
+        'You are invited to join FlowTenant',
+        `You have been invited to join ${organizationName} as ${role}.\n\nAccept your invitation and set your password:\n${invitationUrl.toString()}\n\nThis invitation expires in 7 days.`,
+      );
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'The invitation was created, but its email could not be sent.',
+        { cause: error },
+      );
+    }
+
+    return invitation;
   }
 
   private canInviteRole(inviterRole: UserRole, inviteeRole: UserRole): boolean {

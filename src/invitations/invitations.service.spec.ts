@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { InvitationsRepository } from './invitations.repository';
 import { InvitationsService } from './invitations.service';
+import { InvitationEmailService } from './invitation-email.service';
 import { AuthenticatedUser } from '../auth/auth.types';
 
 describe('InvitationsService', () => {
@@ -13,6 +14,7 @@ describe('InvitationsService', () => {
     findForAcceptance: jest.Mock;
     accept: jest.Mock;
   };
+  let emailService: { sendEmail: jest.Mock };
 
   const platformAdmin: AuthenticatedUser = {
     id: 'platform-1',
@@ -31,11 +33,13 @@ describe('InvitationsService', () => {
       findForAcceptance: jest.fn(),
       accept: jest.fn(),
     };
+    emailService = { sendEmail: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         InvitationsService,
         { provide: InvitationsRepository, useValue: repository },
+        { provide: InvitationEmailService, useValue: emailService },
       ],
     }).compile();
 
@@ -73,7 +77,38 @@ describe('InvitationsService', () => {
         role,
       }),
     );
-    expect(result).toHaveProperty('token');
+    expect(emailService.sendEmail).toHaveBeenCalledWith(
+      'user@example.com',
+      'You are invited to join FlowTenant',
+      expect.stringMatching(
+        /Accept your invitation and set your password:\nhttp:\/\/[^/]+\/accept-invitation\?token=[a-f0-9]{64}/,
+      ),
+    );
+    expect(result).not.toHaveProperty('token');
+  });
+
+  it('reports an error when an invitation email cannot be sent', async () => {
+    repository.findOrganizationForInvite.mockResolvedValue({
+      status: 'ACTIVE',
+      _count: { users: 0 },
+    });
+    repository.findUserByEmail.mockResolvedValue(null);
+    repository.createInvitation.mockResolvedValue({
+      id: 'invite-1',
+      email: 'user@example.com',
+      role: 'EMPLOYEE',
+    });
+    emailService.sendEmail.mockRejectedValue(new Error('Gmail unavailable'));
+
+    await expect(
+      service.invite(platformAdmin, {
+        email: 'user@example.com',
+        role: 'EMPLOYEE',
+        organizationId: 'org-1',
+      }),
+    ).rejects.toThrow(
+      'The invitation was created, but its email could not be sent.',
+    );
   });
 
   it('allows organization admins to invite managers and employees in their org', async () => {

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -17,7 +18,7 @@ import { OrganizationService } from './organization.service';
 
 @Controller('platform/organizations')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('PLATFORM_ADMIN')
+@Roles('PLATFORM_ADMIN','ORGANIZATION_ADMIN')
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
@@ -27,10 +28,15 @@ export class OrganizationController {
   }
 
   @Get()
-  list() {
-    return this.organizationService.list();
+  list(
+    @Query('page') page = '1',
+    @Query('limit') limit = '5',
+  ) {
+    return this.organizationService.list(page, limit);
   }
-
+  
+  @UseGuards(JwtAuthGuard,RolesGuard)
+  @Roles()
   @Get(':id')
   get(@Param('id') id: string) {
     return this.organizationService.get(id);

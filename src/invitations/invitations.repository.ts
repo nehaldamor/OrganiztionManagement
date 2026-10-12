@@ -11,6 +11,7 @@ export class InvitationsRepository {
       where: { id },
       select: {
         status: true,
+        name:true,
         _count: { select: { users: true } },
       },
     });

@@ -9,8 +9,21 @@ export class OrganizationRepository {
     return this.prisma.organization.create({ data });
   }
 
+  count() {
+    return this.prisma.organization.count();
+  }
+
   list() {
     return this.prisma.organization.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { users: true, invitations: true } } },
+    });
+  }
+
+  listPaginated(skip: number, take: number) {
+    return this.prisma.organization.findMany({
+      skip,
+      take,
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { users: true, invitations: true } } },
     });

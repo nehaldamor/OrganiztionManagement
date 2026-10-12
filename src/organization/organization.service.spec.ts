@@ -7,6 +7,8 @@ describe('OrganizationService', () => {
   let repository: {
     create: jest.Mock;
     list: jest.Mock;
+    listPaginated: jest.Mock;
+    count: jest.Mock;
     findById: jest.Mock;
     update: jest.Mock;
   };
@@ -15,6 +17,8 @@ describe('OrganizationService', () => {
     repository = {
       create: jest.fn(),
       list: jest.fn(),
+      listPaginated: jest.fn(),
+      count: jest.fn(),
       findById: jest.fn(),
       update: jest.fn(),
     };
@@ -45,5 +49,35 @@ describe('OrganizationService', () => {
       name: 'North Star',
       slug: 'north-star',
     });
+  });
+
+  it('returns a paginated list of organizations', async () => {
+    const organizations = [{ id: 'org-1', name: 'North Star' }];
+    repository.listPaginated.mockResolvedValue(organizations);
+    repository.count.mockResolvedValue(12);
+
+    await expect(service.list('2', '5')).resolves.toEqual({
+      organizations,
+      data: organizations,
+      meta: {
+        page: 2,
+        limit: 5,
+        totalItems: 12,
+        totalPages: 3,
+        hasNextPage: true,
+        hasPreviousPage: true,
+      },
+      pagination: {
+        page: 2,
+        limit: 5,
+        totalItems: 12,
+        totalPages: 3,
+        hasNextPage: true,
+        hasPreviousPage: true,
+      },
+    });
+
+    expect(repository.listPaginated).toHaveBeenCalledWith(5, 5);
+    expect(repository.count).toHaveBeenCalledWith();
   });
 });

@@ -36,8 +36,42 @@ export class OrganizationService {
     }
   }
 
-  list() {
-    return this.repository.list();
+  async list(page = '1', limit = '5') {
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+      throw new BadRequestException('Page must be a positive integer.');
+    }
+
+    if (!Number.isInteger(limitNumber) || limitNumber < 1) {
+      throw new BadRequestException('Limit must be a positive integer.');
+    }
+
+    const safeLimit = Math.min(limitNumber, 100);
+    const skip = (pageNumber - 1) * safeLimit;
+
+    const [organizations, totalItems] = await Promise.all([
+      this.repository.listPaginated(skip, safeLimit),
+      this.repository.count(),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / safeLimit));
+    const meta = {
+      page: pageNumber,
+      limit: safeLimit,
+      totalItems,
+      totalPages,
+      hasNextPage: pageNumber < totalPages,
+      hasPreviousPage: pageNumber > 1,
+    };
+
+    return {
+      organizations,
+      data: organizations,
+      meta,
+      pagination: meta,
+    };
   }
 
   async get(id: string) {
