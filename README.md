@@ -25,6 +25,16 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Source layout
+
+Feature code lives under `src/modules`, grouped by domain. Each feature keeps
+its controllers, services, repositories, and DTOs in separate directories.
+Shared Prisma wiring lives in `src/database`; the generated Prisma client stays
+in `src/generated` as configured by the Prisma schema.
+
+Current feature modules include authentication, organizations, users,
+invitations, team management, and specialities.
+
 ## Project setup
 
 ```bash
@@ -84,7 +94,9 @@ for authorization.
   or `{ "status": "ACTIVE" }`. Suspended organizations cannot use normal
   organization endpoints or accept invitations.
 - `POST /invitations` is the single invite-creation route. It accepts `{ "email":
-"user@example.com", "role": "MANAGER", "organizationId": "org-id" }`.
+"user@example.com", "role": "MANAGER", "organizationId": "org-id",
+"specialityId": "speciality-id" }`. `specialityId` is optional and must belong
+  to the selected organization.
   `organizationId` is omitted for a global `PLATFORM_ADMIN` invitation.
   Authorization is based on the authenticated user's current database role:
   - Platform Admin → any role. Non-platform roles require an organization ID.
@@ -99,8 +111,9 @@ for authorization.
     testing; only its SHA-256 hash is stored.
 - `POST /invitations/accept` accepts `{ "token": "...", "name": "...",
 "password": "at-least-12-characters" }` and activates the account using the
-  role and organization scope selected by the inviter. A global platform-admin
-  invitation creates a platform admin without an organization.
+  role, organization, and optional speciality selected by the inviter. The
+  speciality assignment is created when the invitation is accepted. A global
+  platform-admin invitation creates a platform admin without an organization.
 
 Invitation tokens are returned only outside production; configure an email
 delivery provider before using invitations in production.
@@ -146,6 +159,43 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+## Run with Docker
+
+### Run the backend and PostgreSQL together
+
+```bash
+docker compose up --build
+```
+
+Copy `.env.example` to `.env` in the `Backend` directory and replace the
+placeholder passwords and JWT secret before starting. Use letters and numbers
+for `POSTGRES_PASSWORD` so it can be safely used in the database URL. Compose
+starts PostgreSQL with a persistent volume, applies committed Prisma migrations,
+seeds the platform admin, and then starts the API. The API is available at
+`http://localhost:3000`. Use `docker compose down` to stop the containers while
+keeping the database volume.
+
+The database URL inside the containers uses the `db` service name, so it does
+not use `localhost` or the host/database address in `.env`. Use
+`docker compose logs -f backend` to view API logs.
+
+### Run the backend image with an external database
+
+Build the production image from the `Backend` directory:
+
+```bash
+docker build -t organizaation-backend .
+```
+
+Run the backend, passing its required environment variables from `.env`:
+
+```bash
+docker run --rm --name organizaation-backend --env-file .env -p 3000:3000 organizaation-backend
+```
+
+The external PostgreSQL database must be reachable through `DATABASE_URL`.
+Do not copy `.env` into the image; provide secrets at runtime.
 
 ## Run tests
 

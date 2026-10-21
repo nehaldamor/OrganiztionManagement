@@ -18,9 +18,9 @@ async function main(): Promise<void> {
     throw new Error('PLATFORM_ADMIN_EMAIL must be a valid email address.');
   }
 
-  if (!password || password.length < 12) {
+  if (!password || password.length < 6) {
     throw new Error(
-      'PLATFORM_ADMIN_PASSWORD must be at least 12 characters long.',
+      'PLATFORM_ADMIN_PASSWORD must be at least 6 characters long.',
     );
   }
 

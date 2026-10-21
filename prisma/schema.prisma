@@ -26,28 +26,34 @@ enum OrganizationStatus {
 }
 
 model Organization {
-  id          String             @id @default(cuid())
-  name        String
-  slug        String             @unique
-  status      OrganizationStatus @default(ACTIVE)
-  users       User[]
-  invitations Invitation[]
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  name           String
+  slug           String             @unique
+  status         OrganizationStatus @default(ACTIVE)
+  users          User[]
+  team           Team[]
+  teammember     TeamMember[]
+  speciality     Speciality[]
+  userspeciality UserSpeciality[]
+  invitations    Invitation[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 }
 
 model User {
-  id              String        @id @default(cuid())
+  id              String           @id @default(cuid())
   name            String
-  email           String        @unique
+  email           String           @unique
   passwordHash    String
   organizationId  String?
-  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  role            UserRole      @default(EMPLOYEE)
-  status          UserStatus    @default(ACTIVE)
-  sentInvitations Invitation[]  @relation("InvitationInviter")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  organization    Organization?    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  role            UserRole         @default(EMPLOYEE)
+  userspeciality  UserSpeciality[]
+  status          UserStatus       @default(ACTIVE)
+  sentInvitations Invitation[]     @relation("InvitationInviter")
+  teammember      TeamMember[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([organizationId])
 }
@@ -58,6 +64,8 @@ model Invitation {
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invitedById    String
   invitedBy      User          @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: Restrict)
+  specialityId   String?
+  speciality     Speciality?   @relation(fields: [specialityId], references: [id], onDelete: SetNull)
   email          String
   role           UserRole      @default(ORGANIZATION_ADMIN)
   tokenHash      String        @unique
@@ -66,4 +74,70 @@ model Invitation {
   createdAt      DateTime      @default(now())
 
   @@index([organizationId, email])
+  @@index([specialityId])
+}
+
+model Speciality {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  code           String           @unique
+  description    String?
+  users          UserSpeciality[]
+  invitations    Invitation[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model UserSpeciality {
+  userId         String
+  specialityId   String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  speciality     Speciality   @relation(fields: [specialityId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@id([userId, specialityId])
+  @@index([specialityId])
+}
+
+enum TeamStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Team {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  status      TeamStatus @default(ACTIVE)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  members TeamMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+}
+
+model TeamMember {
+  teamId String
+  userId String
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt       DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+
+  @@id([teamId, userId])
+  @@unique([userId])
+  @@index([userId])
 }
