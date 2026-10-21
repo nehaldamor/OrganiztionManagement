@@ -36,6 +36,7 @@ model Organization {
   speciality     Speciality[]
   userspeciality UserSpeciality[]
   invitations    Invitation[]
+  projects       Project[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 }
@@ -52,6 +53,9 @@ model User {
   status          UserStatus       @default(ACTIVE)
   sentInvitations Invitation[]     @relation("InvitationInviter")
   teammember      TeamMember[]
+  createdProjects Project[]        @relation("ProjectCreator")
+  assignedTasks   Task[]           @relation("TaskAssignee")
+  createdTasks    Task[]           @relation("TaskCreator")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -117,7 +121,8 @@ model Team {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
-  members TeamMember[]
+  members  TeamMember[]
+  projects Project[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -140,4 +145,67 @@ model TeamMember {
   @@id([teamId, userId])
   @@unique([userId])
   @@index([userId])
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(PLANNING)
+
+  startDate DateTime?
+  dueDate   DateTime?
+
+  organizationId String
+  teamId         String
+  createdById    String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  team         Team         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  tasks        Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+  @@index([teamId])
+  @@index([createdById])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  projectId   String
+  assigneeId  String
+  createdById String
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee  User    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  createdBy User    @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, status])
+  @@index([assigneeId])
+  @@index([createdById])
 }

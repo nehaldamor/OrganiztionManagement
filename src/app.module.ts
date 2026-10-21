@@ -8,6 +8,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { UsermanagementModule } from './modules/users/users.module';
 import { TeammanagementModule } from './modules/teammanagement/teammanagement.module';
 import { SpecialityModule } from './modules/speciality/speciality.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SpecialityModule } from './modules/speciality/speciality.module';
     UsermanagementModule,
     TeammanagementModule,
     SpecialityModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
